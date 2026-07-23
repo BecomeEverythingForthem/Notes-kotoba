@@ -1,0 +1,1428 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kotoba</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#ffffff; --sidebar-bg:#fbfbfa; --text:#37352F; --text-soft:#8b8b87;
+    --border:#eeeeec; --hover:#f1f1ef; --accent:#2383E2; --accent-bg:#e7f3fe;
+    --red:#e03e3e; --red-bg:#fdecec;
+    --ease: cubic-bezier(.2,.8,.2,1);
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:'Inter',-apple-system,sans-serif;font-size:14px;}
+  button, input, textarea{font-family:inherit;font-size:14px;color:var(--text);}
+  .shell{display:flex;height:100vh;overflow:hidden;}
+
+  .sidebar{width:260px;flex-shrink:0;background:var(--sidebar-bg);border-right:1px solid var(--border);display:flex;flex-direction:column;transition:width .2s var(--ease), margin-left .2s var(--ease), opacity .15s ease;overflow:hidden;}
+  .sidebar.collapsed{width:0;margin-left:-1px;opacity:0;border-right:none;}
+  .sidebar-inner{width:260px;flex-shrink:0;display:flex;flex-direction:column;height:100%;}
+  .sidebar-top{padding:10px 8px;display:flex;align-items:center;gap:6px;border-bottom:1px solid var(--border);}
+  .icon-btn{width:28px;height:28px;border-radius:6px;border:none;background:transparent;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-soft);flex-shrink:0;transition:background .15s ease, color .15s ease;}
+  .icon-btn:hover{background:var(--hover);color:var(--text);}
+  .icon-btn:active{transform:scale(.92);}
+
+  .tree-root-row{display:flex;align-items:center;gap:2px;padding:8px 8px 4px;}
+  .chevron{width:20px;height:20px;border:none;background:transparent;color:var(--text-soft);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:transform .18s var(--ease), color .15s ease;transform:rotate(90deg);}
+  .chevron.closed{transform:rotate(0deg);}
+  .chevron:hover{color:var(--text);}
+  .mini-chevron{width:16px;height:16px;border:none;background:transparent;color:var(--text-soft);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:transform .18s var(--ease), color .15s ease;transform:rotate(90deg);}
+  .mini-chevron.closed{transform:rotate(0deg);}
+  .mini-chevron:hover{color:var(--text);}
+  .book-icon{margin-right:2px;}
+  .book-title{font-weight:600;font-size:14px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;padding:4px 6px;border-radius:6px;transition:background .15s ease;}
+  .book-title:hover{background:var(--hover);}
+
+  .tree-children-wrap{display:grid;grid-template-rows:1fr;transition:grid-template-rows .22s var(--ease);}
+  .tree-children-wrap.closed{grid-template-rows:0fr;}
+  .tree-children-inner{overflow:hidden;min-height:0;}
+
+  .nested-wrap{display:grid;grid-template-rows:1fr;transition:grid-template-rows .18s var(--ease);}
+  .nested-wrap.closed{grid-template-rows:0fr;}
+  .nested-wrap-inner{overflow:hidden;}
+
+  .info-wrap{display:grid;grid-template-rows:0fr;transition:grid-template-rows .18s var(--ease);margin:0 10px;}
+  .info-wrap.open{grid-template-rows:1fr;}
+  .info-wrap-inner{overflow:hidden;}
+  .info-block{margin:8px 0;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;font-size:12.5px;color:var(--text-soft);line-height:1.6;}
+  .info-block textarea{width:100%;border:none;background:transparent;resize:none;color:var(--text-soft);padding:0;min-height:44px;font-size:12.5px;line-height:1.6;font-family:inherit;}
+  .info-block textarea:focus{outline:none;}
+  .info-stats{display:flex;gap:12px;margin-top:8px;padding-top:8px;border-top:1px solid var(--border);flex-wrap:wrap;}
+  .info-stats span b{color:var(--text);}
+
+  .search-wrap{margin:8px 10px;position:relative;}
+  .search-wrap input{width:100%;padding:6px 10px 6px 28px;border-radius:6px;border:1px solid var(--border);background:var(--bg);transition:border-color .15s ease;}
+  .search-wrap input:focus{outline:none;border-color:var(--accent);}
+  .search-wrap .si{position:absolute;left:8px;top:50%;transform:translateY(-50%);color:var(--text-soft);pointer-events:none;}
+
+  .section-label{display:flex;align-items:center;justify-content:space-between;padding:6px 14px 4px;color:var(--text-soft);font-size:11.5px;font-weight:600;text-transform:uppercase;letter-spacing:.03em;}
+  .section-label button{background:none;border:none;color:var(--text-soft);cursor:pointer;font-size:15px;line-height:1;padding:2px 4px;border-radius:4px;transition:background .15s ease, color .15s ease;}
+  .section-label button:hover{background:var(--hover);color:var(--text);}
+
+  .group-list{flex:1;overflow-y:auto;padding:2px 6px 10px;padding-left:14px;}
+  .tree-item{margin-bottom:1px;}
+  .group-row{position:relative;display:flex;align-items:center;gap:4px;padding:6px 6px;border-radius:6px;cursor:pointer;color:var(--text);transition:background .15s ease, color .15s ease, box-shadow .15s ease;animation:rowFade .18s var(--ease);}
+  .group-row:hover{background:var(--hover);}
+  .group-row.active{background:var(--accent-bg);color:var(--accent);box-shadow:inset 3px 0 0 var(--accent);}
+  .group-row .gtitle{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;cursor:pointer;}
+  .group-row .gcount{font-size:11px;color:var(--text-soft);}
+  .group-row.active .gcount{color:var(--accent);}
+  .page-row{position:relative;display:flex;align-items:center;gap:6px;padding:5px 6px 5px 26px;border-radius:6px;cursor:pointer;color:var(--text);transition:background .15s ease, color .15s ease, box-shadow .15s ease;animation:rowFade .18s var(--ease);font-size:13.5px;}
+  .page-row:hover{background:var(--hover);}
+  .page-row.active{background:var(--accent-bg);color:var(--accent);box-shadow:inset 3px 0 0 var(--accent);}
+  .page-row .ptitle{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;}
+  .add-page-mini{margin:2px 0 4px 26px;background:none;border:none;color:var(--text-soft);cursor:pointer;padding:4px 6px;border-radius:5px;font-size:12.5px;transition:background .15s ease, color .15s ease;}
+  .add-page-mini:hover{background:var(--hover);color:var(--text);}
+  .empty-hint{padding:14px;color:var(--text-soft);font-size:12.5px;}
+
+  .row-kebab{opacity:0;flex-shrink:0;width:20px;height:20px;border:none;background:transparent;color:var(--text-soft);cursor:pointer;border-radius:5px;display:flex;align-items:center;justify-content:center;transition:opacity .12s ease, background .15s ease, color .15s ease;}
+  .group-row:hover .row-kebab, .page-row:hover .row-kebab, .row-kebab.menu-open{opacity:1;}
+  .row-kebab:hover{background:var(--border);color:var(--text);}
+  .row-kebab.menu-open{background:var(--border);color:var(--text);}
+  .ctx-menu{position:absolute;right:4px;top:calc(100% + 2px);background:var(--bg);border:1px solid var(--border);border-radius:8px;box-shadow:0 6px 20px rgba(0,0,0,.14);z-index:15;min-width:150px;padding:4px;animation:rowFade .12s var(--ease);}
+  .ctx-menu button{display:flex;align-items:center;gap:8px;width:100%;text-align:left;background:none;border:none;padding:7px 8px;border-radius:6px;cursor:pointer;color:var(--text);font-size:13px;}
+  .ctx-menu button:hover{background:var(--hover);}
+  .ctx-menu button.danger{color:var(--red);}
+  .ctx-menu button.danger:hover{background:var(--red-bg);}
+
+  .nested-wrap-inner{position:relative;}
+  .nested-wrap-inner::before{content:'';position:absolute;left:17px;top:0;bottom:6px;width:1px;background:var(--border);}
+
+  .main{flex:1;overflow-y:auto;position:relative;}
+  .main-top{display:flex;align-items:center;gap:8px;padding:10px 24px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg);z-index:2;}
+  .autosave-status{margin-left:auto;display:flex;align-items:center;gap:5px;font-size:11.5px;color:var(--text-soft);white-space:nowrap;flex-shrink:0;}
+  .autosave-status .dot{width:6px;height:6px;border-radius:50%;background:#2ecc71;flex-shrink:0;transition:background .2s ease;}
+  .autosave-status.saving .dot{background:#f2c94c;}
+  .crumb{color:var(--text-soft);font-size:13px;}
+  .crumb-link{cursor:pointer;color:var(--text-soft);transition:color .15s ease;}
+  .crumb-link:hover{color:var(--accent);text-decoration:underline;}
+  .crumb-sep{margin:0 4px;color:var(--text-soft);}
+  .content{max-width:760px;margin:0 auto;padding:40px 40px 80px;}
+  @media (max-width:640px){.content{padding:24px 18px 60px;}}
+  .content{animation:contentFade .22s var(--ease);}
+  @keyframes contentFade{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+  @keyframes rowFade{from{opacity:0;transform:translateY(-3px);}to{opacity:1;transform:translateY(0);}}
+
+  .type-badge{display:inline-block;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--text-soft);background:var(--hover);padding:3px 9px;border-radius:20px;margin-bottom:10px;}
+  .type-badge.grup{color:#8a5a00;background:#fff3d9;}
+  .type-badge.page{color:#1a6b8a;background:#e3f3fb;}
+
+  .page-title{width:100%;border:none;font-size:30px;font-weight:700;padding:2px 0;margin-bottom:6px;background:transparent;color:var(--text);}
+  .page-title:focus{outline:none;}
+  .page-title::placeholder{color:#cfcfcc;}
+  .page-desc{width:100%;border:none;background:transparent;color:var(--text-soft);font-size:14px;resize:none;padding:0;margin-bottom:20px;line-height:1.6;font-family:inherit;}
+  .page-desc:focus{outline:none;}
+
+  .table-head, .row{display:grid;grid-template-columns:1fr 1fr 1.3fr 30px;gap:0;align-items:stretch;}
+  .table-head{padding:4px 0;color:var(--text-soft);font-size:11.5px;font-weight:600;text-transform:uppercase;letter-spacing:.03em;border-bottom:1px solid var(--border);}
+  .table-head span{padding:2px 8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .rows{border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-top:8px;}
+  .row{border-bottom:1px solid var(--border);transition:opacity .16s ease, transform .16s ease, max-height .18s var(--ease);}
+  .row.row-enter{opacity:0;transform:translateY(-6px);}
+  .row.row-exit{opacity:0;transform:translateX(8px);overflow:hidden;}
+  .row:last-child{border-bottom:none;}
+  .row textarea{width:100%;min-width:0;min-height:36px;border:none;padding:9px 8px;margin:0;background:transparent;color:var(--text);border-right:1px solid var(--border);box-sizing:border-box;resize:none;overflow:hidden;font-family:inherit;font-size:14px;line-height:1.5;white-space:pre-wrap;overflow-wrap:break-word;word-break:break-word;display:block;transition:background .15s ease;}
+  .row textarea:last-of-type{border-right:none;}
+  .row textarea:focus{outline:none;background:var(--accent-bg);}
+  .row .rm{width:30px;height:100%;min-height:36px;border:none;background:transparent;color:var(--text-soft);cursor:pointer;font-size:15px;transition:background .15s ease, color .15s ease;}
+  .row .rm:hover{color:var(--red);background:var(--red-bg);}
+
+  .add-row{margin-top:8px;background:none;border:none;color:var(--text-soft);cursor:pointer;padding:8px;border-radius:6px;font-size:13.5px;display:flex;align-items:center;gap:6px;transition:background .15s ease, color .15s ease;}
+  .paste-hint{margin:2px 0 0 4px;color:var(--text-soft);font-size:12px;line-height:1.5;}
+  .paste-hint code{background:var(--hover);padding:1px 5px;border-radius:4px;font-size:11.5px;}
+
+  .table-toolbar{display:flex;align-items:center;gap:6px;margin:14px 0 10px;flex-wrap:wrap;}
+  .tb-btn{display:flex;align-items:center;gap:6px;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:7px;font-size:12.5px;font-weight:600;cursor:pointer;transition:background .15s ease, border-color .15s ease, color .15s ease, opacity .15s ease;}
+  .tb-btn:hover:not(:disabled){background:var(--hover);}
+  .tb-btn:disabled{opacity:.4;cursor:not-allowed;}
+  .tb-btn-accent{color:var(--accent);border-color:var(--accent);}
+  .tb-btn-accent:hover{background:var(--accent-bg);}
+  .add-row:hover{background:var(--hover);color:var(--text);}
+
+  .actions{display:flex;gap:8px;margin-top:22px;align-items:center;flex-wrap:wrap;}
+  .btn{border:1px solid var(--border);background:var(--bg);padding:7px 14px;border-radius:6px;cursor:pointer;color:var(--text);font-weight:500;transition:background .15s ease, transform .05s ease;}
+  .btn:hover{background:var(--hover);}
+  .btn:active{transform:scale(.97);}
+  .btn-primary{background:var(--text);color:#fff;border-color:var(--text);}
+  .btn-primary:hover{opacity:.85;}
+  .btn-danger{color:var(--red);}
+  .btn-danger:hover{background:var(--red-bg);}
+  .icon-square{width:32px;height:32px;border:1px solid var(--border);background:var(--bg);border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text-soft);transition:background .15s ease, color .15s ease, transform .05s ease;}
+  .icon-square:hover{background:var(--hover);color:var(--text);}
+  .icon-square:active{transform:scale(.92);}
+  .icon-square.copied{color:#1a8a4a;border-color:#1a8a4a;}
+
+  .floating-copy{position:fixed;right:28px;bottom:28px;width:52px;height:52px;border-radius:50%;border:1px solid var(--border);background:var(--text);color:#fff;display:none;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.18);z-index:40;transition:transform .12s var(--ease), background .15s ease;}
+  .floating-copy:hover{transform:translateY(-2px);}
+  .floating-copy:active{transform:scale(.94);}
+  .floating-copy.copied{background:#1a8a4a;}
+  .floating-copy .tip{position:absolute;right:60px;top:50%;transform:translateY(-50%);background:var(--text);color:#fff;font-size:12px;font-weight:500;padding:5px 10px;border-radius:6px;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .15s ease;}
+  .floating-copy:hover .tip{opacity:1;}
+  @media (max-width:640px){.floating-copy{right:18px;bottom:18px;width:46px;height:46px;}}
+
+  .hint-text{color:var(--text-soft);font-size:12.5px;margin:2px 0 14px;line-height:1.6;}
+  .manage-list{margin-top:8px;display:flex;flex-direction:column;gap:2px;}
+  .manage-row{display:flex;align-items:center;gap:4px;padding:6px;border-radius:6px;transition:background .15s ease;animation:rowFade .18s var(--ease);}
+  .manage-row:hover{background:var(--hover);}
+  .manage-row .name{flex:1;cursor:pointer;padding:2px 4px;border-radius:4px;}
+  .manage-row .doc-icon{cursor:pointer;padding:2px;}
+  .manage-row .meta{color:var(--text-soft);font-size:12.5px;margin-right:2px;}
+  .row-icon-btn{width:24px;height:24px;border:none;background:transparent;color:var(--text-soft);border-radius:5px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:12px;transition:background .15s ease, color .15s ease;}
+  .row-icon-btn:hover{background:var(--border);color:var(--text);}
+  .row-icon-btn:disabled{opacity:.3;cursor:not-allowed;}
+  .row-icon-btn:disabled:hover{background:transparent;}
+  .row-icon-btn.danger:hover{background:var(--red-bg);color:var(--red);}
+  .rename-input{flex:1;border:1px solid var(--accent);border-radius:5px;padding:3px 6px;background:var(--bg);font-size:14px;}
+  .rename-input:focus{outline:none;}
+  .empty-manage-hint{padding:18px 6px;color:var(--text-soft);font-size:12.5px;border:1px dashed var(--border);border-radius:8px;text-align:center;}
+
+  .dup-toggle-row{display:flex;align-items:center;gap:8px;margin-top:26px;}
+  .dup-count-badge{font-size:11px;font-weight:700;background:var(--red-bg);color:var(--red);padding:2px 8px;border-radius:10px;}
+  .dup-card{border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:8px;animation:rowFade .18s var(--ease);}
+  .dup-kanji{font-size:19px;font-weight:700;margin-bottom:6px;}
+  .dup-occurrence{font-size:12.5px;color:var(--text-soft);padding:3px 0;display:flex;gap:6px;flex-wrap:wrap;}
+  .dup-occurrence b{color:var(--text);font-weight:600;}
+  .dup-occurrence .loc{cursor:pointer;color:var(--accent);}
+  .dup-occurrence .loc:hover{text-decoration:underline;}
+  .dup-empty{color:var(--text-soft);font-size:13px;padding:12px 2px;}
+
+  .show-sidebar-btn{display:none;}
+  .sidebar.collapsed ~ .main .show-sidebar-btn{display:flex;}
+
+  .sidebar-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:29;}
+  .sidebar-backdrop.show{display:block;}
+  @media (max-width:760px){
+    .shell{position:relative;}
+    .sidebar{position:fixed;top:0;left:0;height:100%;z-index:30;width:260px;box-shadow:0 0 24px rgba(0,0,0,.18);transition:transform .2s var(--ease);transform:translateX(0);opacity:1;margin-left:0;border-right:1px solid var(--border);}
+    .sidebar.collapsed{transform:translateX(-100%);width:260px;opacity:1;margin-left:0;border-right:1px solid var(--border);}
+    .main{width:100%;}
+  }
+
+  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(16px);background:var(--text);color:#fff;font-size:13px;font-weight:500;padding:9px 16px;border-radius:6px;opacity:0;transition:all .2s var(--ease);pointer-events:none;z-index:50;}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+  .modal-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:60;align-items:center;justify-content:center;padding:16px;}
+  .modal-backdrop.show{display:flex;}
+  .modal{background:var(--bg);border-radius:12px;width:100%;max-width:440px;max-height:86vh;overflow-y:auto;box-shadow:0 12px 40px rgba(0,0,0,.2);animation:modalPop .16s var(--ease);}
+  @keyframes modalPop{from{opacity:0;transform:scale(.97) translateY(4px);}to{opacity:1;transform:scale(1) translateY(0);}}
+  .modal-head{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid var(--border);}
+  .modal-head h3{margin:0;font-size:15px;font-weight:700;}
+  .modal-body{padding:16px 18px 20px;}
+  .settings-section{margin-bottom:20px;}
+  .settings-section:last-child{margin-bottom:0;}
+  .settings-section h4{margin:0 0 4px;font-size:13px;font-weight:600;}
+  .settings-section p{margin:0 0 10px;color:var(--text-soft);font-size:12.5px;line-height:1.55;}
+  .settings-section .btn{width:100%;justify-content:center;display:flex;}
+  .import-warning{margin-top:8px;padding:8px 10px;background:var(--red-bg);color:var(--red);border-radius:6px;font-size:12px;line-height:1.5;}
+  .file-name-tag{margin-top:8px;font-size:12px;color:var(--text-soft);word-break:break-all;}
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-inner">
+      <div class="sidebar-top">
+        <button class="icon-btn" title="Sembunyikan sidebar" aria-label="Sembunyikan sidebar" onclick="toggleSidebar()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line></svg>
+        </button>
+        <span style="flex:1;"></span>
+        <button class="icon-btn" title="Pengaturan" aria-label="Pengaturan" onclick="openSettings()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+        </button>
+      </div>
+
+      <div class="tree-root-row">
+        <button class="chevron" id="chevronBtn" title="Buka/tutup" aria-label="Buka/tutup" onclick="toggleTree()">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"></path></svg>
+        </button>
+        <span class="book-icon">📘</span>
+        <span class="book-title" id="bookTitleLabel" onclick="openBook()" title="Main Book">Main Book</span>
+        <button class="icon-btn" title="Info" aria-label="Info" onclick="toggleInfo()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+        </button>
+      </div>
+
+      <div class="tree-children-wrap" id="treeChildrenWrap">
+        <div class="tree-children-inner">
+          <div class="info-wrap" id="infoWrap">
+            <div class="info-wrap-inner">
+              <div class="info-block">
+                <textarea id="bookDescInput" placeholder="Deskripsi singkat tentang buku ini..."></textarea>
+                <div class="info-stats">
+                  <span><b id="statGroups">0</b> grup</span>
+                  <span><b id="statPages">0</b> halaman</span>
+                  <span><b id="statWords">0</b> kata</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="search-wrap">
+            <span class="si">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            </span>
+            <input id="searchInput" type="text" placeholder="Cari grup, halaman, atau kosakata..." oninput="renderSidebarTree()">
+          </div>
+
+          <div class="section-label">
+            <span>Grup</span>
+            <button title="Tambah grup" aria-label="Tambah grup" onclick="addGroupInline()">+</button>
+          </div>
+          <div class="group-list" id="groupList"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="toggleSidebar()"></div>
+
+  <div class="main">
+    <div class="main-top">
+      <button class="icon-btn show-sidebar-btn" title="Tampilkan sidebar" aria-label="Tampilkan sidebar" onclick="toggleSidebar()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line></svg>
+      </button>
+      <span class="crumb" id="breadcrumb"></span>
+      <span class="autosave-status" id="autosaveStatus"><span class="dot"></span><span id="autosaveStatusText">Tersimpan otomatis</span></span>
+    </div>
+    <div class="content" id="content"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="modal-backdrop" id="settingsBackdrop" onclick="if(event.target===this) closeSettings()">
+  <div class="modal">
+    <div class="modal-head">
+      <h3>Pengaturan</h3>
+      <button class="icon-btn" title="Tutup" aria-label="Tutup" onclick="closeSettings()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="settings-section">
+        <h4>Export data</h4>
+        <p>Simpan semua grup, halaman, dan kotoba di buku ini ke satu file <code>.json</code> yang bisa disimpan sebagai cadangan atau dipindahkan ke perangkat lain.</p>
+        <button class="btn btn-primary" onclick="exportData()">⬇️ Unduh sebagai JSON</button>
+      </div>
+      <div class="settings-section">
+        <h4>Import data</h4>
+        <p>Muat file <code>.json</code> yang pernah diexport dari Kotoba Notes. Semua grup dan halaman di file akan dipakai untuk mengganti data yang ada sekarang.</p>
+        <button class="btn" onclick="document.getElementById('importFileInput').click()">📂 Pilih file JSON...</button>
+        <input type="file" id="importFileInput" accept="application/json,.json" style="display:none;" onchange="handleImportFile(event)">
+        <div class="import-warning">⚠️ Import akan menimpa/mengganti seluruh data yang ada saat ini. Export dulu sebagai cadangan kalau perlu.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<button class="floating-copy" id="floatingCopyBtn" title="Salin format teks" aria-label="Salin format teks" onclick="copyDraft()">
+  <span class="tip">Salin format teks</span>
+  <span id="floatingCopyIcon"></span>
+</button>
+
+<script>
+const book = { title: 'Main Book', description: '' };
+let groups = [
+  {
+    id: 'g1',
+    title: 'Kosakata Dasar',
+    pages: [
+      {
+        id: 'p1',
+        title: 'Halaman 1',
+        entries: [
+          { kanji:'日本語', furigana:'にほんご', arti:'Japanese language' },
+          { kanji:'学校', furigana:'がっこう', arti:'school' },
+          { kanji:'食べる', furigana:'たべる', arti:'to eat' },
+          { kanji:'電車', furigana:'でんしゃ', arti:'train' },
+          { kanji:'友達', furigana:'ともだち', arti:'friend' }
+        ]
+      }
+    ]
+  }
+];
+
+let view = 'book'; // 'book' | 'group' | 'page'
+let activeGroupId = null;
+let activePageId = null;
+let draft = null; // page being edited: {id, title, entries}
+let renamingType = null; // 'group' | 'page'
+let renamingId = null;
+let expandedGroups = { g1: true };
+let sidebarMenuFor = null; // { type: 'group'|'page', id }
+
+function toggleSidebarMenu(type, id, event){
+  event.stopPropagation();
+  sidebarMenuFor = (sidebarMenuFor && sidebarMenuFor.type===type && sidebarMenuFor.id===id) ? null : { type, id };
+  renderSidebarTree();
+}
+
+document.addEventListener('click', (e) => {
+  if(sidebarMenuFor && !e.target.closest('.ctx-menu') && !e.target.closest('.row-kebab')){
+    sidebarMenuFor = null;
+    renderSidebarTree();
+  }
+});
+
+function makeId(prefix){ return prefix + Date.now() + Math.floor(Math.random()*1000); }
+function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function findGroup(id){ return groups.find(g => g.id === id); }
+
+// --- Persistence: keep data safe across refresh / accidental close -----
+const STORAGE_KEY = 'kotobaNotesData_v1';
+const DRAFT_STORAGE_KEY = 'kotobaNotesDraft_v1';
+let autosaveTimer = null;
+let draftAutosaveTimer = null;
+
+function loadState(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return false;
+    const data = JSON.parse(raw);
+    if(data && Array.isArray(data.groups)){
+      groups = data.groups;
+      if(data.book && typeof data.book === 'object'){
+        book.title = data.book.title || 'Main Book';
+        book.description = data.book.description || '';
+      }
+      groups.forEach(g => { if(!(g.id in expandedGroups)) expandedGroups[g.id] = true; });
+      return true;
+    }
+  }catch(err){ console.warn('Gagal memuat data tersimpan:', err); }
+  return false;
+}
+
+function saveState(){
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ book, groups }));
+    setAutosaveStatus('saved');
+  }catch(err){
+    console.warn('Gagal menyimpan otomatis:', err);
+    setAutosaveStatus('error');
+  }
+}
+
+function scheduleAutosave(){
+  setAutosaveStatus('saving');
+  clearTimeout(autosaveTimer);
+  autosaveTimer = setTimeout(saveState, 400);
+}
+
+function setAutosaveStatus(state){
+  const el = document.getElementById('autosaveStatus');
+  const textEl = document.getElementById('autosaveStatusText');
+  if(!el || !textEl) return;
+  if(state === 'saving'){
+    el.classList.add('saving');
+    textEl.textContent = 'Menyimpan...';
+  } else if(state === 'error'){
+    el.classList.remove('saving');
+    textEl.textContent = 'Gagal menyimpan otomatis';
+  } else {
+    el.classList.remove('saving');
+    textEl.textContent = 'Tersimpan otomatis';
+  }
+}
+
+// Unsaved in-progress table edits (before pressing "Simpan") are kept
+// separately so a refresh or accidental tab close mid-edit doesn't wipe
+// them out — openPage() offers to restore them if found.
+function saveDraftToStorage(){
+  if(!draft || view !== 'page') return;
+  try{
+    localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify({
+      groupId: activeGroupId,
+      pageId: draft.id,
+      title: draft.title,
+      entries: draft.entries,
+      savedAt: Date.now()
+    }));
+  }catch(err){ /* storage full or unavailable: silently skip */ }
+}
+
+function scheduleDraftAutosave(){
+  clearTimeout(draftAutosaveTimer);
+  draftAutosaveTimer = setTimeout(saveDraftToStorage, 500);
+}
+
+function clearDraftStorage(){
+  try{ localStorage.removeItem(DRAFT_STORAGE_KEY); }catch(err){ /* ignore */ }
+}
+
+function tryRecoverPageDraft(pageId, savedPage){
+  try{
+    const raw = localStorage.getItem(DRAFT_STORAGE_KEY);
+    if(!raw) return null;
+    const stored = JSON.parse(raw);
+    if(!stored || stored.pageId !== pageId) return null;
+    const isDifferent = stored.title !== savedPage.title || JSON.stringify(stored.entries) !== JSON.stringify(savedPage.entries);
+    if(!isDifferent){ clearDraftStorage(); return null; }
+    const when = stored.savedAt ? new Date(stored.savedAt).toLocaleString('id-ID') : '';
+    const restore = window.confirm(`Ada perubahan yang belum tersimpan di halaman ini${when ? ' (' + when + ')' : ''}. Pulihkan perubahan tersebut?`);
+    if(!restore){ clearDraftStorage(); return null; }
+    return { id: savedPage.id, title: stored.title, entries: stored.entries.map(e => ({...e})) };
+  }catch(err){
+    console.warn('Gagal membaca draf tersimpan:', err);
+    return null;
+  }
+}
+
+function isMobileView(){ return window.matchMedia('(max-width:760px)').matches; }
+
+function toggleSidebar(){
+  const collapsed = document.getElementById('sidebar').classList.toggle('collapsed');
+  document.getElementById('sidebarBackdrop').classList.toggle('show', isMobileView() && !collapsed);
+}
+
+// On phones/narrow screens the sidebar overlays the main view, so after
+// picking a group/page from it we close it automatically — otherwise the
+// selection "registers" but the user never actually sees the group/page
+// view because the sidebar is still covering it.
+function closeSidebarOnMobile(){
+  if(!isMobileView()) return;
+  const sidebar = document.getElementById('sidebar');
+  if(!sidebar.classList.contains('collapsed')){
+    sidebar.classList.add('collapsed');
+    document.getElementById('sidebarBackdrop').classList.remove('show');
+  }
+}
+function toggleTree(){
+  document.getElementById('treeChildrenWrap').classList.toggle('closed');
+  document.getElementById('chevronBtn').classList.toggle('closed');
+}
+function toggleInfo(){ document.getElementById('infoWrap').classList.toggle('open'); }
+
+function openSettings(){
+  document.getElementById('settingsBackdrop').classList.add('show');
+}
+function closeSettings(){
+  document.getElementById('settingsBackdrop').classList.remove('show');
+  const fileInput = document.getElementById('importFileInput');
+  if(fileInput) fileInput.value = '';
+}
+document.addEventListener('keydown', e => {
+  if(e.key === 'Escape' && document.getElementById('settingsBackdrop').classList.contains('show')) closeSettings();
+});
+
+function exportData(){
+  const payload = {
+    app: 'kotoba-notes',
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    book,
+    groups
+  };
+  const text = JSON.stringify(payload, null, 2);
+  const blob = new Blob([text], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const safeName = (book.title || 'kotoba-notes').trim().replace(/[^a-z0-9\-_]+/gi, '-').replace(/^-+|-+$/g, '') || 'kotoba-notes';
+  a.href = url;
+  a.download = `${safeName}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+  showToast('Data diexport');
+}
+
+function isValidImportedGroups(data){
+  if(!Array.isArray(data)) return false;
+  return data.every(g =>
+    g && typeof g === 'object' &&
+    typeof g.id === 'string' &&
+    Array.isArray(g.pages) &&
+    g.pages.every(p =>
+      p && typeof p === 'object' &&
+      typeof p.id === 'string' &&
+      Array.isArray(p.entries) &&
+      p.entries.every(e => e && typeof e === 'object')
+    )
+  );
+}
+
+function handleImportFile(event){
+  const file = event.target.files && event.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    let data;
+    try{
+      data = JSON.parse(reader.result);
+    }catch(err){
+      showToast('File JSON tidak valid');
+      event.target.value = '';
+      return;
+    }
+    const incomingGroups = Array.isArray(data.groups) ? data.groups : (Array.isArray(data) ? data : null);
+    if(!incomingGroups || !isValidImportedGroups(incomingGroups)){
+      showToast('Format data tidak dikenali');
+      event.target.value = '';
+      return;
+    }
+    const ok = window.confirm('Import akan mengganti seluruh grup, halaman, dan kotoba yang ada sekarang. Lanjutkan?');
+    if(!ok){ event.target.value = ''; return; }
+
+    groups = incomingGroups.map(g => ({
+      id: g.id || makeId('g'),
+      title: g.title || '',
+      pages: g.pages.map(p => ({
+        id: p.id || makeId('p'),
+        title: p.title || '',
+        entries: (p.entries.length ? p.entries : [{kanji:'',furigana:'',arti:''}]).map(e => ({
+          kanji: e.kanji || '', furigana: e.furigana || '', arti: e.arti || ''
+        }))
+      }))
+    }));
+    if(data.book && typeof data.book === 'object'){
+      book.title = data.book.title || 'Main Book';
+      book.description = data.book.description || '';
+    }
+    expandedGroups = {};
+    groups.forEach(g => { expandedGroups[g.id] = true; });
+    view = 'book';
+    activeGroupId = null;
+    activePageId = null;
+    draft = null;
+    renamingType = null;
+    renamingId = null;
+
+    document.getElementById('bookTitleLabel').textContent = book.title || 'Main Book';
+    document.getElementById('bookTitleLabel').title = book.title || 'Main Book';
+    document.getElementById('bookDescInput').value = book.description;
+
+    clearDraftStorage();
+    renderSidebarTree();
+    renderContent();
+    closeSettings();
+    showToast('Data berhasil diimport');
+  };
+  reader.onerror = () => showToast('Gagal membaca file');
+  reader.readAsText(file);
+}
+function toggleGroupBranch(id){
+  expandedGroups[id] = !expandedGroups[id];
+  renderSidebarTree();
+}
+
+document.getElementById('bookDescInput').addEventListener('input', e => {
+  book.description = e.target.value;
+  const d2 = document.getElementById('bookDescInput2');
+  if(d2) d2.value = e.target.value;
+  scheduleAutosave();
+});
+
+function computeStats(){
+  const pageCount = groups.reduce((s,g) => s + g.pages.length, 0);
+  const wordCount = groups.reduce((s,g) => s + g.pages.reduce((s2,p) => s2 + p.entries.filter(e => e.kanji.trim()||e.furigana.trim()||e.arti.trim()).length, 0), 0);
+  return { groupCount: groups.length, pageCount, wordCount };
+}
+
+function updateStats(){
+  const st = computeStats();
+  document.getElementById('statGroups').textContent = st.groupCount;
+  document.getElementById('statPages').textContent = st.pageCount;
+  document.getElementById('statWords').textContent = st.wordCount;
+}
+
+function pageMatches(p, q){
+  if((p.title||'').toLowerCase().includes(q)) return true;
+  return p.entries.some(e =>
+    (e.kanji||'').toLowerCase().includes(q) ||
+    (e.furigana||'').toLowerCase().includes(q) ||
+    (e.arti||'').toLowerCase().includes(q)
+  );
+}
+
+function renderSidebarTree(){
+  const q = document.getElementById('searchInput').value.trim().toLowerCase();
+  const list = document.getElementById('groupList');
+  const searching = q.length > 0;
+
+  const visibleGroups = groups.map(g => {
+    const titleHit = g.title.toLowerCase().includes(q);
+    const matchingPages = !searching ? g.pages : (titleHit ? g.pages : g.pages.filter(p => pageMatches(p, q)));
+    const groupVisible = !searching || titleHit || matchingPages.length > 0;
+    return { g, matchingPages, groupVisible };
+  }).filter(x => x.groupVisible);
+
+  if(visibleGroups.length === 0){
+    list.innerHTML = '<div class="empty-hint">Tidak ada yang cocok.</div>';
+    updateStats();
+    return;
+  }
+
+  list.innerHTML = visibleGroups.map(({g, matchingPages}) => {
+    const isExpanded = searching ? true : !!expandedGroups[g.id];
+    const pagesHtml = matchingPages.map(p => {
+      const menuOpen = sidebarMenuFor && sidebarMenuFor.type==='page' && sidebarMenuFor.id===p.id;
+      const isRenaming = renamingType==='page' && renamingId===p.id;
+      return `
+      <div class="page-row ${p.id===activePageId && view==='page' ? 'active':''}" ${isRenaming ? '' : `onclick="openPage('${g.id}','${p.id}')"`}>
+        <span>📄</span>
+        ${isRenaming
+          ? `<input class="rename-input" id="treeRenameInput-${p.id}" value="${escapeHtml(p.title)}" onclick="event.stopPropagation()" onkeydown="if(event.key==='Enter'){this.blur();} if(event.key==='Escape'){renamingType=null;renamingId=null;renderSidebarTree();}" onblur="finishRename('page','${p.id}', this.value, '${g.id}')">`
+          : `<span class="ptitle" title="${escapeHtml(p.title || 'Tanpa judul')}">${escapeHtml(p.title || 'Tanpa judul')}</span>`
+        }
+        ${isRenaming ? '' : `
+        <button class="row-kebab ${menuOpen?'menu-open':''}" title="Opsi" aria-label="Opsi" onclick="toggleSidebarMenu('page','${p.id}', event)">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"></circle><circle cx="12" cy="12" r="1.8"></circle><circle cx="19" cy="12" r="1.8"></circle></svg>
+        </button>
+        ${menuOpen ? `
+        <div class="ctx-menu" onclick="event.stopPropagation()">
+          <button onclick="sidebarMenuFor=null;startRenameInTree('page','${p.id}')">✏️ Ganti nama</button>
+          <button class="danger" onclick="sidebarMenuFor=null;deletePageFromTree('${g.id}','${p.id}')">🗑️ Hapus halaman</button>
+        </div>` : ''}
+        `}
+      </div>
+    `;
+    }).join('') + `<button class="add-page-mini" onclick="addPageInline('${g.id}')">+ Tambah halaman</button>`;
+
+    const groupMenuOpen = sidebarMenuFor && sidebarMenuFor.type==='group' && sidebarMenuFor.id===g.id;
+    const groupRenaming = renamingType==='group' && renamingId===g.id;
+
+    return `
+      <div class="tree-item">
+        <div class="group-row ${g.id===activeGroupId && view!=='book' ? 'active':''}">
+          <button class="mini-chevron ${isExpanded?'':'closed'}" onclick="event.stopPropagation();toggleGroupBranch('${g.id}')">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"></path></svg>
+          </button>
+          <span>📁</span>
+          ${groupRenaming
+            ? `<input class="rename-input" id="treeRenameInput-${g.id}" value="${escapeHtml(g.title)}" onclick="event.stopPropagation()" onkeydown="if(event.key==='Enter'){this.blur();} if(event.key==='Escape'){renamingType=null;renamingId=null;renderSidebarTree();}" onblur="finishRename('group','${g.id}', this.value)">`
+            : `<span class="gtitle" title="${escapeHtml(g.title || 'Tanpa judul')}" onclick="openGroup('${g.id}')">${escapeHtml(g.title || 'Tanpa judul')}</span>`
+          }
+          ${groupRenaming ? '' : `
+          <span class="gcount">${g.pages.length}</span>
+          <button class="row-kebab ${groupMenuOpen?'menu-open':''}" title="Opsi" aria-label="Opsi" onclick="toggleSidebarMenu('group','${g.id}', event)">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"></circle><circle cx="12" cy="12" r="1.8"></circle><circle cx="19" cy="12" r="1.8"></circle></svg>
+          </button>
+          ${groupMenuOpen ? `
+          <div class="ctx-menu" onclick="event.stopPropagation()">
+            <button onclick="sidebarMenuFor=null;startRenameInTree('group','${g.id}')">✏️ Ganti nama</button>
+            <button onclick="sidebarMenuFor=null;addPageInline('${g.id}')">➕ Tambah halaman</button>
+            <button class="danger" onclick="sidebarMenuFor=null;deleteGroupFromBook('${g.id}')">🗑️ Hapus grup</button>
+          </div>` : ''}
+          `}
+        </div>
+        <div class="nested-wrap ${isExpanded?'':'closed'}">
+          <div class="nested-wrap-inner">${pagesHtml}</div>
+        </div>
+      </div>
+    `;
+  }).join('');
+  updateStats();
+
+  const activeRename = renamingType ? document.getElementById('treeRenameInput-' + renamingId) : null;
+  if(activeRename){ activeRename.focus(); activeRename.select(); }
+
+  scheduleAutosave();
+}
+
+// Rename triggered from the sidebar tree (not the manage list) needs to
+// expand the parent group and keep it in view while the input is focused.
+function startRenameInTree(type, id){
+  renamingType = type;
+  renamingId = id;
+  if(type === 'page'){
+    for(const g of groups){
+      if(g.pages.some(p => p.id === id)){ expandedGroups[g.id] = true; break; }
+    }
+  }
+  renderSidebarTree();
+}
+
+function deletePageFromTree(groupId, pageId){
+  const g = findGroup(groupId);
+  if(!g) return;
+  const p = g.pages.find(x => x.id === pageId);
+  if(!p) return;
+  const ok = window.confirm(`Hapus halaman "${p.title || 'Tanpa judul'}"?`);
+  if(!ok) return;
+  g.pages = g.pages.filter(x => x.id !== pageId);
+  if(activePageId === pageId){ activePageId = null; draft = null; view = 'group'; activeGroupId = groupId; renderContent(); }
+  renderSidebarTree();
+  showToast('Halaman dihapus');
+}
+
+function openBook(){
+  view = 'book';
+  activeGroupId = null;
+  activePageId = null;
+  draft = null;
+  renderSidebarTree();
+  renderContent();
+  closeSidebarOnMobile();
+}
+
+function openGroup(id){
+  view = 'group';
+  activeGroupId = id;
+  activePageId = null;
+  draft = null;
+  expandedGroups[id] = true;
+  renderSidebarTree();
+  renderContent();
+  closeSidebarOnMobile();
+}
+
+function openPage(groupId, pageId){
+  const g = findGroup(groupId);
+  const p = g.pages.find(x => x.id === pageId);
+  const recovered = tryRecoverPageDraft(pageId, p);
+  draft = recovered || { id: p.id, title: p.title, entries: p.entries.map(e => ({...e})) };
+  view = 'page';
+  activeGroupId = groupId;
+  activePageId = pageId;
+  expandedGroups[groupId] = true;
+  renderSidebarTree();
+  renderContent();
+  closeSidebarOnMobile();
+  if(recovered) showToast('Perubahan yang belum tersimpan dipulihkan');
+}
+
+function addGroupInline(){
+  const id = makeId('g');
+  groups.push({ id, title: '', pages: [] });
+  expandedGroups[id] = true;
+  view = 'book';
+  activeGroupId = null;
+  activePageId = null;
+  draft = null;
+  renamingType = 'group';
+  renamingId = id;
+  if(document.getElementById('treeChildrenWrap').classList.contains('closed')) toggleTree();
+  renderSidebarTree();
+  renderContent();
+  showToast('Grup ditambahkan');
+}
+
+function addPageInline(groupId){
+  const g = findGroup(groupId);
+  if(!g) return;
+  const id = makeId('p');
+  g.pages.push({ id, title: '', entries: [{kanji:'',furigana:'',arti:''}] });
+  expandedGroups[groupId] = true;
+  view = 'group';
+  activeGroupId = groupId;
+  activePageId = null;
+  draft = null;
+  renamingType = 'page';
+  renamingId = id;
+  if(document.getElementById('treeChildrenWrap').classList.contains('closed')) toggleTree();
+  renderSidebarTree();
+  renderContent();
+  showToast('Halaman ditambahkan');
+}
+
+function startRename(type, id){
+  renamingType = type;
+  renamingId = id;
+  renderContent();
+}
+
+function finishRename(type, id, value, groupId){
+  const title = value.trim();
+  if(type === 'group'){
+    const g = findGroup(id);
+    if(g && title) g.title = title;
+  } else {
+    const g = findGroup(groupId || activeGroupId);
+    const p = g && g.pages.find(x => x.id === id);
+    if(p && title) p.title = title;
+  }
+  renamingType = null;
+  renamingId = null;
+  renderSidebarTree();
+  renderContent();
+}
+
+function moveGroup(index, dir){
+  const target = index + dir;
+  if(target < 0 || target >= groups.length) return;
+  [groups[index], groups[target]] = [groups[target], groups[index]];
+  renderSidebarTree();
+  renderContent();
+}
+
+function movePage(index, dir){
+  const g = findGroup(activeGroupId);
+  if(!g) return;
+  const target = index + dir;
+  if(target < 0 || target >= g.pages.length) return;
+  [g.pages[index], g.pages[target]] = [g.pages[target], g.pages[index]];
+  renderSidebarTree();
+  renderContent();
+}
+
+function deleteGroupFromBook(id){
+  const g = findGroup(id);
+  if(!g) return;
+  const ok = window.confirm(`Hapus grup "${g.title || 'Tanpa judul'}"? Semua halaman dan kotoba di dalamnya ikut terhapus.`);
+  if(!ok) return;
+  groups = groups.filter(x => x.id !== id);
+  delete expandedGroups[id];
+  if(activeGroupId === id){ activeGroupId = null; activePageId = null; draft = null; view = 'book'; }
+  renderSidebarTree();
+  renderContent();
+  showToast('Grup dihapus');
+}
+
+function deletePageFromGroup(id){
+  const g = findGroup(activeGroupId);
+  if(!g) return;
+  const p = g.pages.find(x => x.id === id);
+  if(!p) return;
+  const ok = window.confirm(`Hapus halaman "${p.title || 'Tanpa judul'}"?`);
+  if(!ok) return;
+  g.pages = g.pages.filter(x => x.id !== id);
+  if(activePageId === id){ activePageId = null; draft = null; view = 'group'; }
+  renderSidebarTree();
+  renderContent();
+  showToast('Halaman dihapus');
+}
+
+function buildBreadcrumb(){
+  const crumb = document.getElementById('breadcrumb');
+  let html = `<span class="crumb-link" onclick="openBook()">${escapeHtml(book.title || 'Main Book')}</span>`;
+  if(view === 'group' || view === 'page'){
+    const g = findGroup(activeGroupId);
+    html += `<span class="crumb-sep">/</span><span class="crumb-link" onclick="openGroup('${activeGroupId}')">${escapeHtml(g ? (g.title||'Tanpa judul') : '')}</span>`;
+  }
+  if(view === 'page'){
+    html += `<span class="crumb-sep">/</span><span>${escapeHtml(draft.title || 'Tanpa judul')}</span>`;
+  }
+  crumb.innerHTML = html;
+}
+
+function renderContent(){
+  const content = document.getElementById('content');
+  content.classList.remove('content');
+  void content.offsetWidth;
+  content.classList.add('content');
+  buildBreadcrumb();
+
+  const floatBtn = document.getElementById('floatingCopyBtn');
+  floatBtn.style.display = (view === 'page') ? 'flex' : 'none';
+  if(view === 'page') document.getElementById('floatingCopyIcon').innerHTML = clipboardIcon();
+
+  if(view === 'book'){ renderBookView(content); return; }
+  if(view === 'group'){ renderGroupView(content); return; }
+  renderPageView(content);
+}
+
+function renderBookView(content){
+  content.innerHTML = `
+    <span class="type-badge">Main Book</span>
+    <input class="page-title" id="bookTitleInput" value="${escapeHtml(book.title)}" placeholder="Judul buku...">
+    <textarea class="page-desc" id="bookDescInput2" placeholder="Tulis deskripsi singkat tentang isi buku ini...">${escapeHtml(book.description)}</textarea>
+    <div class="section-label" style="padding:0 0 4px;"><span>Grup di buku ini</span></div>
+    <p class="hint-text">Grup itu wadah/kategori. Atur urutan, nama, atau hapus grup di sini. Klik nama grup untuk membuka isinya (daftar halaman).</p>
+    <div class="manage-list" id="manageList"></div>
+    <div class="actions">
+      <button class="btn btn-primary" onclick="addGroupInline()">+ Grup baru</button>
+    </div>
+
+    <div class="dup-toggle-row">
+      <button class="btn" id="dupToggleBtn" onclick="toggleDuplicateCheck()">🔍 Cek kotoba duplikat</button>
+      <span id="dupBadgeSlot"></span>
+    </div>
+    <div class="nested-wrap closed" id="dupWrap">
+      <div class="nested-wrap-inner">
+        <p class="hint-text" style="margin-top:10px;">Kotoba dengan kanji yang sama, dicek lintas semua grup dan halaman.</p>
+        <div id="dupResults"></div>
+      </div>
+    </div>
+  `;
+  document.getElementById('bookTitleInput').addEventListener('input', e => {
+    book.title = e.target.value;
+    const label = document.getElementById('bookTitleLabel');
+    label.textContent = book.title || 'Main Book';
+    label.title = book.title || 'Main Book';
+    buildBreadcrumb();
+    scheduleAutosave();
+  });
+  document.getElementById('bookDescInput2').addEventListener('input', e => {
+    book.description = e.target.value;
+    document.getElementById('bookDescInput').value = e.target.value;
+    scheduleAutosave();
+  });
+  renderGroupManageList();
+}
+
+function findDuplicateKotoba(){
+  const map = {};
+  groups.forEach(g => {
+    g.pages.forEach(p => {
+      p.entries.forEach(e => {
+        const k = e.kanji.trim();
+        if(!k) return;
+        if(!map[k]) map[k] = [];
+        map[k].push({
+          groupId: g.id, pageId: p.id,
+          groupTitle: g.title || 'Tanpa judul',
+          pageTitle: p.title || 'Tanpa judul',
+          furigana: e.furigana.trim(), arti: e.arti.trim()
+        });
+      });
+    });
+  });
+  return Object.entries(map).filter(([, list]) => list.length > 1);
+}
+
+function toggleDuplicateCheck(){
+  const wrap = document.getElementById('dupWrap');
+  const isClosed = wrap.classList.contains('closed');
+  if(isClosed){ renderDuplicateResults(); }
+  wrap.classList.toggle('closed');
+}
+
+function renderDuplicateResults(){
+  const dups = findDuplicateKotoba();
+  const resultsEl = document.getElementById('dupResults');
+  const badgeSlot = document.getElementById('dupBadgeSlot');
+  badgeSlot.innerHTML = dups.length ? `<span class="dup-count-badge">${dups.length} kanji duplikat</span>` : '';
+  if(dups.length === 0){
+    resultsEl.innerHTML = '<div class="dup-empty">Tidak ada kotoba duplikat ditemukan. 🎉</div>';
+    return;
+  }
+  resultsEl.innerHTML = dups.map(([kanji, list]) => `
+    <div class="dup-card">
+      <div class="dup-kanji">${escapeHtml(kanji)}</div>
+      ${list.map(item => `
+        <div class="dup-occurrence">
+          <span class="loc" onclick="openPage('${item.groupId}','${item.pageId}')">📁 ${escapeHtml(item.groupTitle)} / 📄 ${escapeHtml(item.pageTitle)}</span>
+          <span>— <b>${escapeHtml(item.furigana || '-')}</b>, ${escapeHtml(item.arti || '-')}</span>
+        </div>
+      `).join('')}
+    </div>
+  `).join('');
+}
+
+function renderGroupManageList(){
+  const wrap = document.getElementById('manageList');
+  if(groups.length === 0){
+    wrap.innerHTML = '<div class="empty-manage-hint">Belum ada grup. Tambahkan grup pertama untuk mulai mengelompokkan kotoba.</div>'
+      + `<button class="add-row" onclick="addGroupInline()">+ Tambah grup</button>`;
+    return;
+  }
+  wrap.innerHTML = groups.map((g,i) => `
+    <div class="manage-row">
+      <button class="row-icon-btn" title="Naik" aria-label="Naik" onclick="moveGroup(${i},-1)" ${i===0?'disabled':''}>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
+      </button>
+      <button class="row-icon-btn" title="Turun" aria-label="Turun" onclick="moveGroup(${i},1)" ${i===groups.length-1?'disabled':''}>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+      </button>
+      <span class="doc-icon" onclick="openGroup('${g.id}')">📁</span>
+      ${renamingType==='group' && renamingId===g.id
+        ? `<input class="rename-input" id="renameInput-${g.id}" value="${escapeHtml(g.title)}" onkeydown="if(event.key==='Enter'){this.blur();} if(event.key==='Escape'){renamingType=null;renamingId=null;renderContent();}" onblur="finishRename('group','${g.id}', this.value)">`
+        : `<span class="name" onclick="openGroup('${g.id}')">${escapeHtml(g.title || 'Tanpa judul')}</span>`
+      }
+      <span class="meta">${g.pages.length} halaman</span>
+      <button class="row-icon-btn" title="Ganti nama" aria-label="Ganti nama" onclick="startRename('group','${g.id}')">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"></path></svg>
+      </button>
+      <button class="row-icon-btn danger" title="Hapus grup" aria-label="Hapus grup" onclick="deleteGroupFromBook('${g.id}')">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6M14 11v6"></path></svg>
+      </button>
+    </div>
+  `).join('') + `<button class="add-row" onclick="addGroupInline()">+ Tambah grup</button>`;
+  const activeInput = (renamingType==='group' && renamingId) ? document.getElementById('renameInput-' + renamingId) : null;
+  if(activeInput){ activeInput.focus(); activeInput.select(); }
+}
+
+function renderGroupView(content){
+  const g = findGroup(activeGroupId);
+  content.innerHTML = `
+    <span class="type-badge grup">Grup</span>
+    <input class="page-title" id="groupTitleInput" value="${escapeHtml(g.title)}" placeholder="Judul grup...">
+    <div class="section-label" style="padding:0 0 4px;"><span>Halaman di grup ini</span></div>
+    <p class="hint-text">Page adalah daftar kotoba yang sesungguhnya. Atur urutan, nama, atau hapus halaman di sini. Klik nama halaman untuk mengisi kotoba-nya.</p>
+    <div class="manage-list" id="manageList"></div>
+    <div class="actions">
+      <button class="btn btn-primary" onclick="addPageInline('${g.id}')">+ Halaman baru</button>
+      <button class="btn" onclick="openBook()">Kembali ke Main Book</button>
+    </div>
+  `;
+  document.getElementById('groupTitleInput').addEventListener('input', e => {
+    g.title = e.target.value;
+    document.getElementById('groupList') && renderSidebarTree();
+    buildBreadcrumb();
+  });
+  renderPageManageList(g);
+}
+
+function renderPageManageList(g){
+  const wrap = document.getElementById('manageList');
+  if(g.pages.length === 0){
+    wrap.innerHTML = '<div class="empty-manage-hint">Belum ada halaman. Tambahkan halaman pertama untuk mulai mengisi kotoba.</div>'
+      + `<button class="add-row" onclick="addPageInline('${g.id}')">+ Tambah halaman</button>`;
+    return;
+  }
+  wrap.innerHTML = g.pages.map((p,i) => `
+    <div class="manage-row">
+      <button class="row-icon-btn" title="Naik" aria-label="Naik" onclick="movePage(${i},-1)" ${i===0?'disabled':''}>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
+      </button>
+      <button class="row-icon-btn" title="Turun" aria-label="Turun" onclick="movePage(${i},1)" ${i===g.pages.length-1?'disabled':''}>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+      </button>
+      <span class="doc-icon" onclick="openPage('${g.id}','${p.id}')">📄</span>
+      ${renamingType==='page' && renamingId===p.id
+        ? `<input class="rename-input" id="renameInput-${p.id}" value="${escapeHtml(p.title)}" onkeydown="if(event.key==='Enter'){this.blur();} if(event.key==='Escape'){renamingType=null;renamingId=null;renderContent();}" onblur="finishRename('page','${p.id}', this.value, '${g.id}')">`
+        : `<span class="name" onclick="openPage('${g.id}','${p.id}')">${escapeHtml(p.title || 'Tanpa judul')}</span>`
+      }
+      <span class="meta">${p.entries.filter(e=>e.kanji.trim()||e.furigana.trim()||e.arti.trim()).length} kata</span>
+      <button class="row-icon-btn" title="Ganti nama" aria-label="Ganti nama" onclick="startRename('page','${p.id}')">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"></path></svg>
+      </button>
+      <button class="row-icon-btn danger" title="Hapus halaman" aria-label="Hapus halaman" onclick="deletePageFromGroup('${p.id}')">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6M14 11v6"></path></svg>
+      </button>
+    </div>
+  `).join('') + `<button class="add-row" onclick="addPageInline('${g.id}')">+ Tambah halaman</button>`;
+  const activeInput = (renamingType==='page' && renamingId) ? document.getElementById('renameInput-' + renamingId) : null;
+  if(activeInput){ activeInput.focus(); activeInput.select(); }
+}
+
+function renderPageView(content){
+  content.innerHTML = `
+    <span class="type-badge page">Page</span>
+    <input class="page-title" id="pageTitleInput" value="${escapeHtml(draft.title)}" placeholder="Judul halaman...">
+    <div class="table-toolbar">
+      <button class="tb-btn" id="undoBtn" title="Undo" aria-label="Undo" onclick="undoEntries()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"></path><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"></path></svg>
+        <span>Undo</span>
+      </button>
+      <button class="tb-btn" id="redoBtn" title="Redo" aria-label="Redo" onclick="redoEntries()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 14 5-5-5-5"></path><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"></path></svg>
+        <span>Redo</span>
+      </button>
+      <button class="tb-btn tb-btn-accent" title="Tempel kotoba dari clipboard" aria-label="Tempel kotoba dari clipboard" onclick="pasteKotobaFromClipboard()">
+        ${clipboardIcon(15)}
+        <span>Tempel dari Clipboard</span>
+      </button>
+    </div>
+    <div class="table-head">
+      <span>Kanji</span><span>Furigana</span><span>Arti</span><span></span>
+    </div>
+    <div class="rows" id="rowsWrap"></div>
+    <button class="add-row" onclick="addRow()">+ Tambah baris</button>
+    <p class="paste-hint">💡 Tempel (paste) banyak baris sekaligus dengan format <code>kanji,furigana,arti</code> per baris — otomatis tersusun jadi baris-baris baru.</p>
+    <div class="actions">
+      <button class="btn btn-primary" onclick="savePage()">Simpan</button>
+      <button class="btn" onclick="openGroup('${activeGroupId}')">Kembali ke Grup</button>
+    </div>
+  `;
+  document.getElementById('pageTitleInput').addEventListener('input', e => {
+    draft.title = e.target.value;
+    buildBreadcrumb();
+    scheduleDraftAutosave();
+  });
+  renderRows();
+  resetHistory();
+}
+
+function clipboardIcon(size){
+  const s = size || 16;
+  return `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="8" y="2" width="8" height="4" rx="1"></rect>
+    <path d="M8 4H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-2"></path>
+  </svg>`;
+}
+
+function checkIcon(){
+  return `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+}
+
+function autoGrow(el){
+  el.style.height = 'auto';
+  el.style.height = el.scrollHeight + 'px';
+}
+
+function renderRows(){
+  const wrap = document.getElementById('rowsWrap');
+  wrap.innerHTML = draft.entries.map((e,i) => `
+    <div class="row">
+      <textarea rows="1" placeholder="漢字" oninput="updateEntry(${i},'kanji',this.value);autoGrow(this)" onpaste="handleCellPaste(event,${i},'kanji')">${escapeHtml(e.kanji)}</textarea>
+      <textarea rows="1" placeholder="ふりがな" oninput="updateEntry(${i},'furigana',this.value);autoGrow(this)" onpaste="handleCellPaste(event,${i},'furigana')">${escapeHtml(e.furigana)}</textarea>
+      <textarea rows="1" placeholder="arti / meaning" oninput="updateEntry(${i},'arti',this.value);autoGrow(this)" onpaste="handleCellPaste(event,${i},'arti')">${escapeHtml(e.arti)}</textarea>
+      <button class="rm" title="Hapus baris" onclick="removeRow(${i})">&times;</button>
+    </div>
+  `).join('');
+  wrap.querySelectorAll('textarea').forEach(autoGrow);
+}
+
+window.addEventListener('resize', () => {
+  if(view === 'page'){
+    document.querySelectorAll('#rowsWrap textarea').forEach(autoGrow);
+  }
+});
+
+function updateEntry(i, field, value){ draft.entries[i][field] = value; commitHistoryDebounced(); scheduleDraftAutosave(); }
+
+// --- Undo / redo history for the vocab table -------------------------
+// Snapshots are taken after every committed change (row add/remove,
+// bulk paste, or a short pause after typing) so Undo/Redo step through
+// meaningful states instead of one keystroke at a time.
+let entryHistory = [];
+let historyPointer = -1;
+let historyDebounceTimer = null;
+const HISTORY_LIMIT = 60;
+
+function cloneEntries(){ return JSON.parse(JSON.stringify(draft.entries)); }
+
+function resetHistory(){
+  entryHistory = [cloneEntries()];
+  historyPointer = 0;
+  updateUndoRedoButtons();
+}
+
+function commitHistory(){
+  if(!draft) return;
+  const snap = cloneEntries();
+  if(historyPointer >= 0 && JSON.stringify(entryHistory[historyPointer]) === JSON.stringify(snap)) return;
+  entryHistory = entryHistory.slice(0, historyPointer + 1);
+  entryHistory.push(snap);
+  if(entryHistory.length > HISTORY_LIMIT) entryHistory.shift();
+  historyPointer = entryHistory.length - 1;
+  updateUndoRedoButtons();
+}
+
+function commitHistoryDebounced(){
+  clearTimeout(historyDebounceTimer);
+  historyDebounceTimer = setTimeout(commitHistory, 500);
+}
+
+function undoEntries(){
+  clearTimeout(historyDebounceTimer);
+  commitHistory();
+  if(historyPointer <= 0) return;
+  historyPointer--;
+  draft.entries = JSON.parse(JSON.stringify(entryHistory[historyPointer]));
+  renderRows();
+  updateUndoRedoButtons();
+  saveDraftToStorage();
+}
+
+function redoEntries(){
+  clearTimeout(historyDebounceTimer);
+  if(historyPointer >= entryHistory.length - 1) return;
+  historyPointer++;
+  draft.entries = JSON.parse(JSON.stringify(entryHistory[historyPointer]));
+  renderRows();
+  updateUndoRedoButtons();
+  saveDraftToStorage();
+}
+
+function updateUndoRedoButtons(){
+  const undoBtn = document.getElementById('undoBtn');
+  const redoBtn = document.getElementById('redoBtn');
+  if(undoBtn) undoBtn.disabled = historyPointer <= 0;
+  if(redoBtn) redoBtn.disabled = historyPointer >= entryHistory.length - 1;
+}
+
+// Parses "kanji,furigana,arti" per-line text (the same format the
+// floating copy button produces) into entry objects.
+function parsePasteLines(text){
+  const lines = text.replace(/\r\n/g, '\n').split('\n').map(l => l.trim()).filter(l => l.length > 0);
+  return lines.map(line => {
+    const parts = line.split(',').map(p => p.trim());
+    return { kanji: parts[0] || '', furigana: parts[1] || '', arti: parts[2] || '' };
+  });
+}
+
+// Lets a user paste bulk vocab in "kanji,furigana,arti" per-line format
+// directly into a cell. A plain single value with no comma still pastes
+// normally into just that field. Anything else expands downward into new
+// rows, starting at the row that was pasted into.
+function handleCellPaste(event, rowIndex, field){
+  const clipboardText = (event.clipboardData || window.clipboardData).getData('text');
+  if(!clipboardText) return;
+
+  const rawLines = clipboardText.replace(/\r\n/g, '\n').split('\n').map(l => l.trim()).filter(l => l.length > 0);
+  if(rawLines.length === 0) return;
+
+  const hasComma = rawLines.some(l => l.includes(','));
+  if(rawLines.length === 1 && !hasComma) return; // plain single value: let default paste happen
+
+  event.preventDefault();
+
+  const parsedRows = parsePasteLines(clipboardText);
+  draft.entries[rowIndex] = parsedRows[0];
+  if(parsedRows.length > 1){
+    draft.entries.splice(rowIndex + 1, 0, ...parsedRows.slice(1));
+  }
+
+  renderRows();
+  commitHistory(); saveDraftToStorage();
+  showToast(parsedRows.length > 1 ? `${parsedRows.length} kotoba ditempel` : 'Kotoba ditempel');
+
+  const wrap = document.getElementById('rowsWrap');
+  const lastFilledRow = wrap.children[rowIndex + parsedRows.length - 1];
+  if(lastFilledRow){
+    const fieldIndex = field === 'kanji' ? 0 : field === 'furigana' ? 1 : 2;
+    const ta = lastFilledRow.querySelectorAll('textarea')[fieldIndex];
+    if(ta){ ta.focus(); const len = ta.value.length; ta.setSelectionRange(len, len); }
+  }
+}
+
+// Button version of the same bulk-paste behavior, reading directly from
+// the clipboard instead of requiring a manual Ctrl+V into a cell. Inserts
+// into the first fully-empty row if one exists, otherwise appends at the
+// end of the table.
+async function pasteKotobaFromClipboard(){
+  let text = '';
+  try{
+    text = await navigator.clipboard.readText();
+  }catch(err){
+    showToast('Tidak bisa akses clipboard otomatis — tempel manual (Ctrl+V) di salah satu kolom saja');
+    return;
+  }
+  if(!text || !text.trim()){
+    showToast('Clipboard kosong');
+    return;
+  }
+  const parsedRows = parsePasteLines(text);
+  if(parsedRows.length === 0){ showToast('Tidak ada teks untuk ditempel'); return; }
+
+  const emptyIndex = draft.entries.findIndex(e => !e.kanji.trim() && !e.furigana.trim() && !e.arti.trim());
+  if(emptyIndex !== -1){
+    draft.entries[emptyIndex] = parsedRows[0];
+    if(parsedRows.length > 1) draft.entries.splice(emptyIndex + 1, 0, ...parsedRows.slice(1));
+  } else {
+    draft.entries.push(...parsedRows);
+  }
+
+  renderRows();
+  commitHistory(); saveDraftToStorage();
+  showToast(`${parsedRows.length} kotoba ditempel dari clipboard`);
+}
+
+function addRow(){
+  draft.entries.push({kanji:'',furigana:'',arti:''});
+  renderRows();
+  commitHistory(); saveDraftToStorage();
+  const wrap = document.getElementById('rowsWrap');
+  const last = wrap.lastElementChild;
+  if(last){
+    last.classList.add('row-enter');
+    requestAnimationFrame(() => requestAnimationFrame(() => last.classList.remove('row-enter')));
+    const firstField = last.querySelector('textarea');
+    if(firstField) firstField.focus();
+  }
+}
+
+function removeRow(i){
+  if(draft.entries.length === 1){
+    draft.entries[0] = {kanji:'',furigana:'',arti:''};
+    renderRows();
+    commitHistory(); saveDraftToStorage();
+    return;
+  }
+  const wrap = document.getElementById('rowsWrap');
+  const el = wrap.children[i];
+  if(el){
+    const h = el.getBoundingClientRect().height;
+    el.style.maxHeight = h + 'px';
+    void el.offsetHeight;
+    el.classList.add('row-exit');
+    requestAnimationFrame(() => { el.style.maxHeight = '0px'; });
+    el.addEventListener('transitionend', () => {
+      draft.entries.splice(i,1);
+      renderRows();
+      commitHistory(); saveDraftToStorage();
+    }, { once: true });
+  } else {
+    draft.entries.splice(i,1);
+    renderRows();
+    commitHistory(); saveDraftToStorage();
+  }
+}
+
+function savePage(){
+  const title = draft.title.trim();
+  if(!title){ showToast('Judul halaman tidak boleh kosong'); return; }
+  const g = findGroup(activeGroupId);
+  const idx = g.pages.findIndex(p => p.id === draft.id);
+  const clean = draft.entries.filter(e => e.kanji.trim()||e.furigana.trim()||e.arti.trim());
+  g.pages[idx] = { id: draft.id, title, entries: clean.length ? clean : [{kanji:'',furigana:'',arti:''}] };
+  draft = { id: draft.id, title, entries: g.pages[idx].entries.map(e => ({...e})) };
+  clearDraftStorage();
+  renderSidebarTree();
+  renderContent();
+  showToast('Halaman disimpan');
+}
+
+function fallbackCopyText(text){
+  return new Promise((resolve, reject) => {
+    try{
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.setAttribute('readonly', '');
+      ta.style.position = 'fixed';
+      ta.style.top = '-9999px';
+      ta.style.left = '-9999px';
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      ta.setSelectionRange(0, text.length);
+      const ok = document.execCommand('copy');
+      document.body.removeChild(ta);
+      if(ok) resolve(); else reject(new Error('execCommand copy failed'));
+    }catch(err){ reject(err); }
+  });
+}
+
+function copyToClipboard(text){
+  // navigator.clipboard requires a secure context (https) and permission,
+  // which fails silently when the file is opened directly (file://) or
+  // over plain http. Fall back to the classic textarea+execCommand trick
+  // whenever the modern API is missing or rejects.
+  if(navigator.clipboard && navigator.clipboard.writeText && window.isSecureContext){
+    return navigator.clipboard.writeText(text).catch(() => fallbackCopyText(text));
+  }
+  return fallbackCopyText(text);
+}
+
+function copyDraft(){
+  const text = draft.entries
+    .filter(e => e.kanji.trim()||e.furigana.trim()||e.arti.trim())
+    .map(e => `${e.kanji.trim() || '-'},${e.furigana.trim() || '-'},${e.arti.trim() || '-'}`)
+    .join('\n');
+  if(!text){ showToast('Belum ada kosakata untuk disalin'); return; }
+  copyToClipboard(text).then(() => {
+    showToast('Disalin ke clipboard!');
+    const btn = document.getElementById('floatingCopyBtn');
+    const icon = document.getElementById('floatingCopyIcon');
+    if(btn && icon){
+      const original = icon.innerHTML;
+      icon.innerHTML = checkIcon();
+      btn.classList.add('copied');
+      setTimeout(() => { icon.innerHTML = original; btn.classList.remove('copied'); }, 1200);
+    }
+  }).catch(() => showToast('Gagal menyalin'));
+}
+
+let toastTimer = null;
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 1800);
+}
+
+loadState();
+document.getElementById('bookTitleLabel').textContent = book.title || 'Main Book';
+document.getElementById('bookTitleLabel').title = book.title || 'Main Book';
+renderSidebarTree();
+renderContent();
+</script>
+</body>
+</html>
